@@ -9,7 +9,7 @@
     // must have some user interaction before music can play, so force a user button click
     function listen() {
 
-      document.getElementById("start").style.display = "hidden";
+      document.getElementById("start").style.visibility = "hidden";
       // create audio contect for oscillators
       ctx = new (window.AudioContext || window.webkitAudioContext)();
 
