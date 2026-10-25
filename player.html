@@ -1,54 +1,79 @@
 <!DOCTYPE html>
-<button id="start">Start listening</button>
-<div id="status">Not listening</div>
-<script>
-  const TOPIC = "dance-continua-34CB27D41E"; 
+<html>
+<head>
+  <title>Player</title>
+  <script>
+    var ctx = null;
+    const TOPIC = "dance-continua-34CB27D41E"; 
 
-  // prefetch audio file to reduce latency on first play
-  fetch('EDM.mp3'); 
+    // must have some user interaction before music can play, so force a user button click
+    function listen() {
 
-  // must have some user interaction before music can play, so force a user button click
-  document.getElementById("start").onclick = () => {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      document.getElementById("start").style.display = "hidden";
+      // create audio contect for oscillators
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-  function action(msg) {
-    const data = JSON.parse(msg.message); // Works fine
-    html = `{"phoneId": ${data.phoneId}, "chipId": "${data.chipId}"}`;
-    document.getElementById("status").innerHTML += html + "<br>";
-    if (data.phoneId == 1) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 440;
-      gain.gain.value = 0.2;
+      // listen for notfications from receivers
+      const es = new EventSource(`https://ntfy.sh/${TOPIC}/sse`);
+
+      es.onopen = () => document.getElementById("log").innerHTML = "Listening...<br>";
+      es.onmessage = (e) => {
+        const msg = JSON.parse(e.data);           // decode message from receiver
+        if (msg.event === "message") action(msg); // perform action
+      };
+      es.onerror = () => document.getElementById("log").textContent = "Connection issue, retrying...";
+    };
+
+    function action(msg) {
+      // extract receier and chip from message
+      const data = JSON.parse(msg.message); // Works fine
       
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 10);
-    }
-    else if (data.phoneId == 2) {
-      const audio = new Audio('kaazoom-lost-in-the-haze.mp3');
-      audio.play();    
-    }
-    else if (data.phoneId == 3) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 880;
-      gain.gain.value = 0.2;
+      // display locally
+      const logLine = `Tap detected on receiver: ${data.receiverId} with chip id: ${data.chipId}`;
+      document.getElementById("log").innerHTML += logLine + "<br>";
       
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 10);
+      // respond based on which receiver was tapped
+      if (data.receiverId == 1) {  // 10 second tone at 440 Hz
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 440;
+        gain.gain.value = 0.2;
+        
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 10);
+      }
+      else if (data.receiverId == 2) { // play music clip
+        const audio = new Audio('kaazoom-lost-in-the-haze.mp3');
+        audio.play();    
+      }
+      else if (data.receiverId == 3) {  // 10 second tone at 880 Hz
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 880;
+        gain.gain.value = 0.2;
+        
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 10);
+      }
     }
-  }
+  </script>
+</head>
+<body>
+<!-- 
+  Create a dummy audio tag to prefetch audio files to reduce lag when played later.
 
-  const es = new EventSource(`https://ntfy.sh/${TOPIC}/sse`);
-  es.onopen = () => document.getElementById("status").innerHTML = "Listening...<br>";
-  es.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    if (msg.event === "message") action(msg);
-  };
-  es.onerror = () => document.getElementById("status").textContent = "Connection issue, retrying...";
-};
-</script>
+  If it is desired to never allow more than one instance of the audio clip playing at once
+  this can also be played/paused programmatically with document.getElementById("song1").play() or .pause()
+-->
+<audio id="song1" preload="auto">
+  <source src="./kaazoom-lost-in-the-haze.mp3" type="audio/mpeg">
+</audio>
+
+Music Player: <button id="start" onclick="listen()">Start listening</button>
+<div style="border: 1px solid black; height: 10em; overflow: auto" id="log"></div>
+</body>
+</html>

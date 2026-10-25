@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<head>
+  <title>NFC Receiver</title>
+  <script> 
+  var ndef = null;
+  var receiverId = null;
+
+  const TOPIC = "dance-continua-34CB27D41E"; 
+
+  try {
+    ndef = new NDEFReader();
+  }
+  catch (e) {
+    alert ("NFC is not supported on this device/browser/OS (Chrome on Android only). Scanning will not register.");
+  }
+
+  // embed scan in function triggered by button click (some user interaction is required)
+  function scan() {
+    // determine which receiver is being set up
+    receiverId = document.getElementById("receiverId").value;
+    
+    // reconfigure UI to hide unused elements
+    document.getElementById("label").innerHTML = `Receiver ${receiverId} is waiting for scans...`;
+    document.getElementById("receiverId").style.visibility="hidden";
+    document.getElementById("button").style.visibility="hidden";
+
+    // initiate waiting for scan
+    if (ndef) {
+      ndef.scan();
+
+      // respond to reading a chip by sending a message via ntfy.sh
+      ndef.onreading = (event) => {
+        sendMsg (event.serialNumber);
+      };
+
+    }
+  }
+  function sendMsg(chipId) {
+      // build message as JSON string
+      msg = `{"receiverId": ${receiverId}, "chipId": "${chipId}"}`;
+      
+      // display locally
+      document.getElementById("log").innerHTML += msg + "<br>";
+
+      // inform server of scan
+      fetch(`https://ntfy.sh/${TOPIC}`, { method: "POST", body: msg});      
+  }
+  </script>
+</head>
+<body>
+  <span id="label">NFC Scanner. 
+  <label for="receiverId">Select Receiver: </label></span><select id="receiverId"><option>1</option><option>2</option><option>3</option></select>
+  <button onclick = "scan()" id="button">Start</button>
+  <div style="border: 1px solid black; height: 10em; overflow: auto" id="log"></div>
+  <button onclick="sendMsg('Dummy Chip 1')">Dummy 1</button>
+  <button onclick="sendMsg('Dummy Chip 2')">Dummy 2</button>
+  <button onclick="sendMsg('Dummy Chip 3')">Dummy 3</button>
+</body>
