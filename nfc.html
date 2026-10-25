@@ -1,0 +1,35 @@
+<script> 
+var ndef = null;
+const TOPIC = "dance-continua-34CB27D41E"; 
+
+try {
+  ndef = new NDEFReader();
+}
+catch (e) {
+  alert ("NFC not supported on this device/browser/OS.  Chrome on Android only.");
+}
+
+function scan() {
+  phoneId = document.getElementById("phoneId").value;
+  
+  document.getElementById("label").innerHTML = "Waiting for scans...";
+  document.getElementById("phoneId").style.visibility="hidden";
+  document.getElementById("button").style.visibility="hidden";
+  ndef.scan();
+  ndef.onreading = event => {
+
+    // build message as JSON string
+    msg = `{"phoneId": ${phoneId}, "chipId": "${event.serialNumber}"}`;
+    
+    // display locally
+    document.getElementById("msg").innerHTML += msg + "<br>";
+
+    // inform server of scan
+    fetch(`https://ntfy.sh/${TOPIC}`, { method: "POST", body: msg});
+  }
+}
+</script>
+<span id="label">NFC Tester</span>
+<select id="phoneId"><option>1</option><option>2</option><option>3</option></select>
+<button onclick = "scan()" id="button">Scan</button>
+<div style="border: 1px solid black; min-height: 10em" id="msg"></div>

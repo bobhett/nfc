@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<button id="start">Start listening</button>
+<div id="status">Not listening</div>
+<script>
+  const TOPIC = "dance-continua-34CB27D41E"; 
+
+  // prefetch audio file to reduce latency on first play
+  fetch('EDM.mp3'); 
+
+  // must have some user interaction before music can play, so force a user button click
+  document.getElementById("start").onclick = () => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function action(msg) {
+    const data = JSON.parse(msg.message); // Works fine
+    html = `{"phoneId": ${data.phoneId}, "chipId": "${data.chipId}"}`;
+    document.getElementById("status").innerHTML += html + "<br>";
+    if (data.phoneId == 1) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 440;
+      gain.gain.value = 0.2;
+      
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 10);
+    }
+    else if (data.phoneId == 2) {
+      const audio = new Audio('kaazoom-lost-in-the-haze.mp3');
+      audio.play();    
+    }
+    else if (data.phoneId == 3) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.value = 0.2;
+      
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 10);
+    }
+  }
+
+  const es = new EventSource(`https://ntfy.sh/${TOPIC}/sse`);
+  es.onopen = () => document.getElementById("status").innerHTML = "Listening...<br>";
+  es.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.event === "message") action(msg);
+  };
+  es.onerror = () => document.getElementById("status").textContent = "Connection issue, retrying...";
+};
+</script>
