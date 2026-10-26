@@ -30,7 +30,9 @@
       
       // display locally
       const logLine = `Tap detected on receiver: ${data.receiverId} with chip id: ${data.chipId}`;
-      document.getElementById("log").innerHTML += logLine + "<br>";
+      log = document.getElementById("log");
+      log.innerHTML += logLine + "<br>";
+      log.scrollTop = log.scrollHeight; // scroll to bottom
       
       // respond based on which receiver was tapped
       if (data.receiverId == 1) {  // 10 second tone at 440 Hz

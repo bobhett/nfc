@@ -41,7 +41,9 @@
       msg = `{"receiverId": ${receiverId}, "chipId": "${chipId}"}`;
       
       // display locally
-      document.getElementById("log").innerHTML += msg + "<br>";
+      log = document.getElementById("log");
+      log.innerHTML += msg + "<br>";
+      log.scrollTop = log.scrollHeight; // scroll to bottom
 
       // inform server of scan
       fetch(`https://ntfy.sh/${TOPIC}`, { method: "POST", body: msg});      
